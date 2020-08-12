@@ -3,7 +3,7 @@ const { BigIntAsDecimal } = require("..");
 
 const createRandomDecimal = () => {
   const coef = Math.round((Math.random() - 0.5) * 0xffff);
-  const exp = Math.round((Math.random() - 0.5) * 10) || 0;
+  const exp = Math.round((Math.random() - 0.5) * 8) || 0;
   return [coef, exp, coef * 10 ** exp];
 };
 
@@ -75,15 +75,30 @@ describe("Basic arithmetic operations", () => {
         BigIntAsDecimal.divide(12345n, -2, 6789n, -3),
         new BigIntAsDecimal(1818n, -2)
       );
+      assert.deepStrictEqual(
+        BigIntAsDecimal.divide(12345n, -2, 6789n, -3, -10),
+        new BigIntAsDecimal(181838267786n, -10)
+      );
     });
 
-    it("should produce the same results as Number-based calculations", () => {
+    it("should produce the same results as Number-based calculations #1 without expOut", () => {
       for (let i = 0; i < 1000; i++) {
         const [xc, xe, xn] = createRandomDecimal();
         const [yc, ye, yn] = createRandomDecimal();
         assert.deepStrictEqual(
           BigIntAsDecimal.divide(BigInt(xc), xe, BigInt(yc), ye),
           numberToDecimal(xn / yn, xe)
+        );
+      }
+    });
+
+    it("should produce the same results as Number-based calculations #2 with expOut", () => {
+      for (let i = 0; i < 1000; i++) {
+        const [xc, xe, xn] = createRandomDecimal();
+        const [yc, ye, yn] = createRandomDecimal();
+        assert.deepStrictEqual(
+          BigIntAsDecimal.divide(BigInt(xc), xe, BigInt(yc), ye, -5),
+          numberToDecimal(xn / yn, -5)
         );
       }
     });

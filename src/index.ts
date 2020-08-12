@@ -1,5 +1,8 @@
 export class BigIntAsDecimal {
+  /** Signed coefficient. */
   coef: bigint;
+
+  /** Exponent. */
   exp: number;
 
   constructor(coef: bigint, exp: number) {
@@ -66,14 +69,21 @@ export class BigIntAsDecimal {
     xe: number,
     yc: bigint,
     ye: number,
+    expOut: number = xe,
     rounding: Rounding = BigIntAsDecimal.defaultRounding
   ): BigIntAsDecimal {
     if (ye > 0) {
       yc = BigIntAsDecimal.scaleCoef(yc, -ye);
       ye = 0;
     }
-    xc = BigIntAsDecimal.scaleCoef(xc, ye);
-    return new BigIntAsDecimal(rounding(xc, yc), xe);
+    if (expOut + ye - xe > 0) {
+      throw new RangeError(
+        "'expOut' should be <= xe - ye, or the result will be rounded twice"
+      );
+    } else {
+      xc = BigIntAsDecimal.scaleCoef(xc, expOut + ye - xe);
+      return new BigIntAsDecimal(rounding(xc, yc), expOut);
+    }
   }
 
   /** Rounding mode options for division operation. */

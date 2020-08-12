@@ -367,7 +367,7 @@ describe("BigIntAsDecimal.ROUNDING", () => {
         }
       });
 
-      it("should produce the same results as does Math object-based implementation #1", () => {
+      it("should produce the same results as does Math object-based implementation #1 sequence", () => {
         for (let i = 0; i < 1000; i++) {
           const num = bignum + BigInt(i);
           const rp = bignum / 100n + BigInt(MathImpl[mode](i, 100));
@@ -377,7 +377,7 @@ describe("BigIntAsDecimal.ROUNDING", () => {
         }
       });
 
-      it("should produce the same results as does Math object-based implementation #2", () => {
+      it("should produce the same results as does Math object-based implementation #2 random", () => {
         for (let i = 0; i < 1000; i++) {
           const dividend = Math.trunc((Math.random() - 0.5) * 0xffffffff);
           const divisor = Math.trunc((Math.random() - 0.5) * 0xffffffff);
