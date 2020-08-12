@@ -1,3 +1,4 @@
+/** Represent a decimal number as `coef * 10 ** exp`. */
 export class BigIntAsDecimal {
   /** Signed coefficient. */
   coef: bigint;
@@ -10,17 +11,21 @@ export class BigIntAsDecimal {
     this.exp = exp;
   }
 
+  /**
+   * Shift `coef` by `expChange` decimal digits (+: right, -: left). This method
+   * essentially calculates `coef * 10 ** -expChange` in order to get a coef
+   * that represents the same decimal value after exp is changed by `expChange`.
+   * The result is rounded when `expChange` is larger than zero.
+   */
   static scaleCoef(
     coef: bigint,
     expChange: number,
-    rounding: Rounding = BigIntAsDecimal.defaultRounding
+    rounding: BigIntDivision = BigIntAsDecimal.defaultRounding
   ): bigint {
-    if (expChange === 0) {
-      return coef;
-    } else if (expChange < 0) {
-      return coef * 10n ** BigInt(-expChange);
-    } else {
+    if (expChange > 0) {
       return rounding(coef, 10n ** BigInt(expChange));
+    } else {
+      return scaleCoefSafe(coef, expChange);
     }
   }
 
@@ -28,7 +33,7 @@ export class BigIntAsDecimal {
     coef: bigint,
     exp: number,
     expTo: number,
-    rounding: Rounding = BigIntAsDecimal.defaultRounding
+    rounding: BigIntDivision = BigIntAsDecimal.defaultRounding
   ): BigIntAsDecimal {
     return new BigIntAsDecimal(
       BigIntAsDecimal.scaleCoef(coef, expTo - exp, rounding),
@@ -38,8 +43,8 @@ export class BigIntAsDecimal {
 
   static add(xc: bigint, xe: number, yc: bigint, ye: number): BigIntAsDecimal {
     const exp = Math.min(xe, ye);
-    xc = BigIntAsDecimal.scaleCoef(xc, exp - xe);
-    yc = BigIntAsDecimal.scaleCoef(yc, exp - ye);
+    xc = scaleCoefSafe(xc, exp - xe);
+    yc = scaleCoefSafe(yc, exp - ye);
     return new BigIntAsDecimal(xc + yc, exp);
   }
 
@@ -50,8 +55,8 @@ export class BigIntAsDecimal {
     ye: number
   ): BigIntAsDecimal {
     const exp = Math.min(xe, ye);
-    xc = BigIntAsDecimal.scaleCoef(xc, exp - xe);
-    yc = BigIntAsDecimal.scaleCoef(yc, exp - ye);
+    xc = scaleCoefSafe(xc, exp - xe);
+    yc = scaleCoefSafe(yc, exp - ye);
     return new BigIntAsDecimal(xc - yc, exp);
   }
 
@@ -70,10 +75,10 @@ export class BigIntAsDecimal {
     yc: bigint,
     ye: number,
     expOut: number = xe,
-    rounding: Rounding = BigIntAsDecimal.defaultRounding
+    rounding: BigIntDivision = BigIntAsDecimal.defaultRounding
   ): BigIntAsDecimal {
     if (ye > 0) {
-      yc = BigIntAsDecimal.scaleCoef(yc, -ye);
+      yc = scaleCoefSafe(yc, -ye);
       ye = 0;
     }
     if (expOut + ye - xe > 0) {
@@ -81,7 +86,7 @@ export class BigIntAsDecimal {
         "'expOut' should be <= xe - ye, or the result will be rounded twice"
       );
     } else {
-      xc = BigIntAsDecimal.scaleCoef(xc, expOut + ye - xe);
+      xc = scaleCoefSafe(xc, expOut + ye - xe);
       return new BigIntAsDecimal(rounding(xc, yc), expOut);
     }
   }
@@ -111,7 +116,7 @@ export class BigIntAsDecimal {
       if (r === 0n) {
         return q;
       } else {
-        const isQNegative = (n > 0n && div < 0n) || (n < 0n && div > 0n);
+        const isQNegative = n > 0n !== div > 0n;
         return q + (isQNegative ? -1n : 1n);
       }
     },
@@ -123,7 +128,7 @@ export class BigIntAsDecimal {
     TOWARD_POSITIVE_INFINITY: (n: bigint, div: bigint): bigint => {
       const q = n / div;
       const r = n % div;
-      const isQNegative = (n > 0n && div < 0n) || (n < 0n && div > 0n);
+      const isQNegative = n > 0n !== div > 0n;
       if (isQNegative || r === 0n) {
         return q;
       } else {
@@ -134,8 +139,8 @@ export class BigIntAsDecimal {
     TOWARD_NEGATIVE_INFINITY: (n: bigint, div: bigint): bigint => {
       const q = n / div;
       const r = n % div;
-      const isQNegative = (n > 0n && div < 0n) || (n < 0n && div > 0n);
-      if (!isQNegative || r === 0n) {
+      const isQPositive = n > 0n === div > 0n;
+      if (isQPositive || r === 0n) {
         return q;
       } else {
         return q - 1n;
@@ -143,9 +148,22 @@ export class BigIntAsDecimal {
     },
   };
 
-  static defaultRounding: Rounding = BigIntAsDecimal.ROUNDING.HALF_UP;
+  static defaultRounding: BigIntDivision = BigIntAsDecimal.ROUNDING.HALF_UP;
 }
 
-interface Rounding {
+interface BigIntDivision {
   (n: bigint, div: bigint): bigint;
 }
+
+/**
+ * Same as [[BigIntAsDecimal.scaleCoef]] but this guarantees no rounding occurs.
+ */
+const scaleCoefSafe = (coef: bigint, expChange: number): bigint => {
+  if (expChange === 0) {
+    return coef;
+  } else if (expChange < 0) {
+    return coef * 10n ** BigInt(-expChange);
+  } else {
+    throw new RangeError("'expChange' should be <= 0");
+  }
+};

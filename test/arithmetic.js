@@ -85,9 +85,13 @@ describe("Basic arithmetic operations", () => {
       for (let i = 0; i < 1000; i++) {
         const [xc, xe, xn] = createRandomDecimal();
         const [yc, ye, yn] = createRandomDecimal();
+        if (yc === 0) {
+          continue;
+        }
         assert.deepStrictEqual(
           BigIntAsDecimal.divide(BigInt(xc), xe, BigInt(yc), ye),
-          numberToDecimal(xn / yn, xe)
+          numberToDecimal(xn / yn, xe),
+          `Tested operation: ${xc}e${xe} / ${yc}e${ye}. Verify expected and actual results. This test may fail as expected results are subject to roundoff errors.`
         );
       }
     });
@@ -96,9 +100,13 @@ describe("Basic arithmetic operations", () => {
       for (let i = 0; i < 1000; i++) {
         const [xc, xe, xn] = createRandomDecimal();
         const [yc, ye, yn] = createRandomDecimal();
+        if (yc === 0) {
+          continue;
+        }
         assert.deepStrictEqual(
           BigIntAsDecimal.divide(BigInt(xc), xe, BigInt(yc), ye, -5),
-          numberToDecimal(xn / yn, -5)
+          numberToDecimal(xn / yn, -5),
+          `Tested operation: ${xc}e${xe} / ${yc}e${ye}. Verify expected and actual results. This test may fail as expected results are subject to roundoff errors.`
         );
       }
     });
