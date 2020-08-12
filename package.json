@@ -1,0 +1,38 @@
+{
+  "name": "bigint_as_decimal",
+  "version": "0.0.1",
+  "description": "Thin wrapper and utilities to use BigInt as fixed-point decimal number.",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "scripts": {
+    "build": "rm -rf lib && tsc",
+    "lint": "eslint src --ext .ts",
+    "prepare": "npm run lint && npm run build && npm test",
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LiosK/bigint_as_decimal.git"
+  },
+  "keywords": [
+    "bigint",
+    "decimal"
+  ],
+  "author": "LiosK <contact@mail.liosk.net>",
+  "license": "Apache-2.0",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "bugs": {
+    "url": "https://github.com/LiosK/bigint_as_decimal/issues"
+  },
+  "homepage": "https://github.com/LiosK/bigint_as_decimal#readme",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^3.9.0",
+    "@typescript-eslint/parser": "^3.9.0",
+    "eslint": "^7.6.0",
+    "mocha": "^8.1.1",
+    "typescript": "^3.9.7"
+  }
+}
