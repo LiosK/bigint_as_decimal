@@ -82,6 +82,67 @@ export class BigIntAsDecimal {
     }
   }
 
+  /** Experimental. */
+  static stringifyLocale(
+    coef: bigint,
+    exp: number,
+    locales?: string | string[],
+    options?: SupportedNumberFormatOptions
+  ): string {
+    if (coef === 0n) {
+      const nf = new Intl.NumberFormat(locales, options);
+      return nf.format(0n);
+    } else if (exp >= 0) {
+      const nf = new Intl.NumberFormat(locales, options);
+      return nf.format(scaleCoefSafe(coef, exp, 0));
+    } else {
+      const div = 10n ** BigInt(-exp);
+
+      // Format integer part
+      const integer = coef / div;
+      const opt: Intl.NumberFormatOptions = {
+        ...options,
+      };
+      if (
+        opt.minimumFractionDigits == null ||
+        opt.minimumFractionDigits < -exp
+      ) {
+        opt.minimumFractionDigits = -exp;
+      }
+      const nf = new Intl.NumberFormat(locales, opt);
+      const parts =
+        coef > 0n || integer !== 0n
+          ? nf.formatToParts(integer)
+          : nf.formatToParts(-0.1); // to format as a negative number
+
+      // Format fraction part
+      const fraction = coef % div;
+      const optf: Intl.NumberFormatOptions = {
+        ...options,
+        minimumIntegerDigits: -exp,
+        useGrouping: false,
+      };
+      const nff = new Intl.NumberFormat(locales, optf);
+      let bufferf = "";
+      for (const e of nff.formatToParts(fraction)) {
+        if (e.type === "integer") {
+          bufferf += e.value;
+        }
+      }
+
+      // Concat parts, replacing fraction part with bufferf
+      let buffer = "";
+      for (const e of parts) {
+        if (e.type === "fraction") {
+          buffer += bufferf;
+        } else {
+          buffer += e.value;
+        }
+      }
+      return buffer;
+    }
+  }
+
   static scaleCoef(
     coef: bigint,
     exp: number,
@@ -176,3 +237,11 @@ const scaleCoefSafe = (coef: bigint, exp: number, expTo: number): bigint => {
     throw new RangeError("'expTo' should be <= 'exp' to avoid rounding");
   }
 };
+
+interface SupportedNumberFormatOptions
+  extends Omit<
+    Intl.NumberFormatOptions,
+    "minimumSignificantDigits" | "maximumSignificantDigits"
+  > {
+  notation?: "standard";
+}
