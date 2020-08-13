@@ -68,18 +68,29 @@ export class BigIntAsDecimal {
     this.exp = exp;
   }
 
-  static setExp(
+  static stringify(coef: bigint, exp: number): string {
+    if (coef === 0n) {
+      return "0";
+    } else if (exp >= 0) {
+      return scaleCoefSafe(coef, exp, 0).toString();
+    } else {
+      const sign = coef < 0 ? "-" : "";
+      const digits = coef.toString().slice(coef < 0 ? 1 : 0);
+      const integer = digits.slice(0, exp).padStart(1, "0");
+      const fraction = digits.slice(exp).padStart(-exp, "0");
+      return `${sign}${integer}.${fraction}`;
+    }
+  }
+
+  static scaleCoef(
     coef: bigint,
     exp: number,
     expTo: number,
     rounding: RoundingDivision = BigIntAsDecimal.defaultRounding
-  ): BigIntAsDecimal {
-    return new BigIntAsDecimal(
-      expTo > exp
-        ? rounding(coef, 10n ** BigInt(expTo - exp))
-        : scaleCoefSafe(coef, exp, expTo),
-      expTo
-    );
+  ): bigint {
+    return expTo > exp
+      ? rounding(coef, 10n ** BigInt(expTo - exp))
+      : scaleCoefSafe(coef, exp, expTo);
   }
 
   static add(xc: bigint, xe: number, yc: bigint, ye: number): BigIntAsDecimal {
