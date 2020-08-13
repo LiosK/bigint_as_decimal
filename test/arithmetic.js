@@ -84,9 +84,9 @@ describe("Basic arithmetic operations", () => {
     it("should produce the same results as Number-based calculations #1 without expOut", () => {
       for (let i = 0; i < 1000; i++) {
         const [xc, xe, xn] = createRandomDecimal();
-        const [yc, ye, yn] = createRandomDecimal();
-        if (yc === 0) {
-          continue;
+        let [yc, ye, yn] = createRandomDecimal();
+        while (yc === 0) {
+          [yc, ye, yn] = createRandomDecimal();
         }
         assert.deepStrictEqual(
           BigIntAsDecimal.divide(BigInt(xc), xe, BigInt(yc), ye),
@@ -99,9 +99,9 @@ describe("Basic arithmetic operations", () => {
     it("should produce the same results as Number-based calculations #2 with expOut", () => {
       for (let i = 0; i < 1000; i++) {
         const [xc, xe, xn] = createRandomDecimal();
-        const [yc, ye, yn] = createRandomDecimal();
-        if (yc === 0) {
-          continue;
+        let [yc, ye, yn] = createRandomDecimal();
+        while (yc === 0) {
+          [yc, ye, yn] = createRandomDecimal();
         }
         assert.deepStrictEqual(
           BigIntAsDecimal.divide(BigInt(xc), xe, BigInt(yc), ye, -5),

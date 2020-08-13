@@ -3,7 +3,7 @@ const { BigIntAsDecimal } = require("..");
 
 const manualCases = {
   // {{{
-  HALF_UP: [
+  ROUND_HALF_UP: [
     [1000n, 100n, 10n],
     [1001n, 100n, 10n],
     [1049n, 100n, 10n],
@@ -57,7 +57,7 @@ const manualCases = {
     [-1199n, -100n, 12n],
     [-1200n, -100n, 12n],
   ],
-  HALF_TO_EVEN: [
+  ROUND_HALF_TO_EVEN: [
     [1000n, 100n, 10n],
     [1001n, 100n, 10n],
     [1049n, 100n, 10n],
@@ -111,7 +111,7 @@ const manualCases = {
     [-1199n, -100n, 12n],
     [-1200n, -100n, 12n],
   ],
-  UP: [
+  ROUND_UP: [
     [1000n, 100n, 10n],
     [1001n, 100n, 11n],
     [1049n, 100n, 11n],
@@ -165,7 +165,7 @@ const manualCases = {
     [-1199n, -100n, 12n],
     [-1200n, -100n, 12n],
   ],
-  DOWN: [
+  ROUND_DOWN: [
     [1000n, 100n, 10n],
     [1001n, 100n, 10n],
     [1049n, 100n, 10n],
@@ -219,7 +219,7 @@ const manualCases = {
     [-1199n, -100n, 11n],
     [-1200n, -100n, 12n],
   ],
-  TOWARD_POSITIVE_INFINITY: [
+  ROUND_TOWARD_POSITIVE_INFINITY: [
     [1000n, 100n, 10n],
     [1001n, 100n, 11n],
     [1049n, 100n, 11n],
@@ -273,7 +273,7 @@ const manualCases = {
     [-1199n, -100n, 12n],
     [-1200n, -100n, 12n],
   ],
-  TOWARD_NEGATIVE_INFINITY: [
+  ROUND_TOWARD_NEGATIVE_INFINITY: [
     [1000n, 100n, 10n],
     [1001n, 100n, 10n],
     [1049n, 100n, 10n],
@@ -331,39 +331,45 @@ const manualCases = {
 };
 
 const MathImpl = {
-  HALF_UP: (n, div) => {
+  ROUND_HALF_UP: (n, div) => {
     const q = n / div;
     return 0 < q ? Math.floor(q + 0.5) : Math.ceil(q - 0.5);
   },
-  HALF_TO_EVEN: (n, div) => {
+  ROUND_HALF_TO_EVEN: (n, div) => {
     const q = n / div;
     const r = 0 < q ? q % 2 : (q % 2) + 2;
     return 1 < r ? Math.floor(q + 0.5) : Math.ceil(q - 0.5);
   },
-  UP: (n, div) => {
+  ROUND_UP: (n, div) => {
     const q = n / div;
     return 0 < q ? Math.ceil(q) : Math.floor(q);
   },
-  DOWN: (n, div) => {
+  ROUND_DOWN: (n, div) => {
     const q = n / div;
     return 0 < q ? Math.floor(q) : Math.ceil(q);
   },
-  TOWARD_POSITIVE_INFINITY: (n, div) => {
+  ROUND_TOWARD_POSITIVE_INFINITY: (n, div) => {
     return Math.ceil(n / div);
   },
-  TOWARD_NEGATIVE_INFINITY: (n, div) => {
+  ROUND_TOWARD_NEGATIVE_INFINITY: (n, div) => {
     return Math.floor(n / div);
   },
 };
 
-describe("BigIntAsDecimal.ROUNDING", () => {
+describe("BigIntAsDecimal.ROUND_*", () => {
   for (const mode of Object.keys(manualCases)) {
     const bignum = 1_000_000_000_000_000_000_000n;
 
     describe(mode, () => {
+      it("should fail when the divisor is zero", () => {
+        assert.throws(() => {
+          BigIntAsDecimal[mode](1n, 0n);
+        });
+      });
+
       it("should produce the same results as manually prepared cases", () => {
         for (const e of manualCases[mode]) {
-          assert.strictEqual(BigIntAsDecimal.ROUNDING[mode](e[0], e[1]), e[2]);
+          assert.strictEqual(BigIntAsDecimal[mode](e[0], e[1]), e[2]);
         }
       });
 
@@ -372,8 +378,8 @@ describe("BigIntAsDecimal.ROUNDING", () => {
           const num = bignum + BigInt(i);
           const rp = bignum / 100n + BigInt(MathImpl[mode](i, 100));
           const rn = -bignum / 100n + BigInt(MathImpl[mode](-i, 100));
-          assert.strictEqual(BigIntAsDecimal.ROUNDING[mode](num, 100n), rp);
-          assert.strictEqual(BigIntAsDecimal.ROUNDING[mode](-num, 100n), rn);
+          assert.strictEqual(BigIntAsDecimal[mode](num, 100n), rp);
+          assert.strictEqual(BigIntAsDecimal[mode](-num, 100n), rn);
         }
       });
 
@@ -382,7 +388,7 @@ describe("BigIntAsDecimal.ROUNDING", () => {
           const dividend = Math.trunc((Math.random() - 0.5) * 0xffffffff);
           const divisor = Math.trunc((Math.random() - 0.5) * 0xffffffff);
           assert.strictEqual(
-            BigIntAsDecimal.ROUNDING[mode](BigInt(dividend), BigInt(divisor)),
+            BigIntAsDecimal[mode](BigInt(dividend), BigInt(divisor)),
             BigInt(MathImpl[mode](dividend, divisor))
           );
         }
