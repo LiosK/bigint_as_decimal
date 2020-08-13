@@ -1,17 +1,17 @@
 const assert = require("assert").strict;
 const { BigIntAsDecimal } = require("..");
 
-const createRandomDecimal = () => {
-  const coef = Math.round((Math.random() - 0.5) * 0xffff);
-  const exp = Math.round((Math.random() - 0.5) * 8) || 0;
-  return [coef, exp, coef * 10 ** exp];
-};
+describe("Arithmetic operations", () => {
+  const createRandomDecimal = () => {
+    const coef = Math.round((Math.random() - 0.5) * 0xffff);
+    const exp = Math.round((Math.random() - 0.5) * 8) || 0;
+    return [coef, exp, coef * 10 ** exp];
+  };
 
-const numberToDecimal = (num, exp) => {
-  return new BigIntAsDecimal(BigInt(Math.round(num * 10 ** -exp)), exp);
-};
+  const numberToDecimal = (num, exp) => {
+    return new BigIntAsDecimal(BigInt(Math.round(num * 10 ** -exp)), exp);
+  };
 
-describe("Basic arithmetic operations", () => {
   describe("BigIntAsDecimal.add()", () => {
     it("should produce the same results as manually prepared cases", () => {
       assert.deepStrictEqual(
@@ -112,3 +112,5 @@ describe("Basic arithmetic operations", () => {
     });
   });
 });
+
+// vim: fdm=marker fmr&
