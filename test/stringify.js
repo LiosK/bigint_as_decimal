@@ -87,6 +87,8 @@ describe("BigIntAsDecimal.stringify*", () => {
       { style: "currency", currency: "JPY" },
       { style: "currency", currency: "GBP" },
       { style: "currency", currency: "AUD" },
+      { style: "currency", currency: "CAD", currencySign: "accounting" },
+      // { style: "unit", unit: "meter" }, // fails when formatting Arabic
       // }}}
     ];
 

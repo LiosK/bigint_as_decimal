@@ -25,7 +25,13 @@ export class BigIntAsDecimal {
     }
   }
 
-  /** Experimental. */
+  /**
+   * Experimental.
+   *
+   * #### Known issues
+   *
+   * * Fails to format correctly in Arabic when `options.style == "unit"`.
+   */
   static stringifyLocale(
     coef: bigint,
     exp: number,
