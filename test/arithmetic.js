@@ -5,7 +5,7 @@ describe("Arithmetic operations", () => {
   const createRandomDecimal = () => {
     const coef = Math.round((Math.random() - 0.5) * 0xffff);
     const exp = Math.round((Math.random() - 0.5) * 8) || 0;
-    return [coef, exp, coef * 10 ** exp];
+    return [BigInt(coef), exp, coef * 10 ** exp];
   };
 
   const numberToDecimal = (num, exp) => {
@@ -29,7 +29,7 @@ describe("Arithmetic operations", () => {
         const [xc, xe, xn] = createRandomDecimal();
         const [yc, ye, yn] = createRandomDecimal();
         assert.deepStrictEqual(
-          BigIntAsDecimal.add(BigInt(xc), xe, BigInt(yc), ye),
+          BigIntAsDecimal.add(xc, xe, yc, ye),
           numberToDecimal(xn + yn, Math.min(xe, ye))
         );
       }
@@ -48,7 +48,7 @@ describe("Arithmetic operations", () => {
         const [xc, xe, xn] = createRandomDecimal();
         const [yc, ye, yn] = createRandomDecimal();
         assert.deepStrictEqual(
-          BigIntAsDecimal.subtract(BigInt(xc), xe, BigInt(yc), ye),
+          BigIntAsDecimal.subtract(xc, xe, yc, ye),
           numberToDecimal(xn - yn, Math.min(xe, ye))
         );
       }
@@ -67,7 +67,7 @@ describe("Arithmetic operations", () => {
         const [xc, xe, xn] = createRandomDecimal();
         const [yc, ye, yn] = createRandomDecimal();
         assert.deepStrictEqual(
-          BigIntAsDecimal.multiply(BigInt(xc), xe, BigInt(yc), ye),
+          BigIntAsDecimal.multiply(xc, xe, yc, ye),
           numberToDecimal(xn * yn, xe + ye)
         );
       }
@@ -89,11 +89,11 @@ describe("Arithmetic operations", () => {
       for (let i = 0; i < 1000; i++) {
         const [xc, xe, xn] = createRandomDecimal();
         let [yc, ye, yn] = createRandomDecimal();
-        while (yc === 0) {
+        while (yc === 0n) {
           [yc, ye, yn] = createRandomDecimal();
         }
         assert.deepStrictEqual(
-          BigIntAsDecimal.divide(BigInt(xc), xe, BigInt(yc), ye),
+          BigIntAsDecimal.divide(xc, xe, yc, ye),
           numberToDecimal(xn / yn, xe),
           `Tested operation: ${xc}e${xe} / ${yc}e${ye}. Verify expected and actual results. This test may fail as expected results are subject to roundoff errors.`
         );
@@ -104,11 +104,11 @@ describe("Arithmetic operations", () => {
       for (let i = 0; i < 1000; i++) {
         const [xc, xe, xn] = createRandomDecimal();
         let [yc, ye, yn] = createRandomDecimal();
-        while (yc === 0) {
+        while (yc === 0n) {
           [yc, ye, yn] = createRandomDecimal();
         }
         assert.deepStrictEqual(
-          BigIntAsDecimal.divide(BigInt(xc), xe, BigInt(yc), ye, -5),
+          BigIntAsDecimal.divide(xc, xe, yc, ye, -5),
           numberToDecimal(xn / yn, -5),
           `Tested operation: ${xc}e${xe} / ${yc}e${ye}. Verify expected and actual results. This test may fail as expected results are subject to roundoff errors.`
         );

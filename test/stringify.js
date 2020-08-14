@@ -5,7 +5,7 @@ describe("BigIntAsDecimal.stringify*", () => {
   const createRandomDecimal = () => {
     const coef = Math.round((Math.random() - 0.5) * 0xffff);
     const exp = Math.round((Math.random() - 0.5) * 12) || 0;
-    return [coef, exp, coef * 10 ** exp];
+    return [BigInt(coef), exp, coef * 10 ** exp];
   };
 
   describe("BigIntAsDecimal.stringify()", () => {
@@ -48,8 +48,64 @@ describe("BigIntAsDecimal.stringify*", () => {
     it("should produce the same results as does Number-based implementation", () => {
       for (let i = 0; i < 1000; i++) {
         const [coef, exp, num] = createRandomDecimal();
-        const actual = BigIntAsDecimal.stringify(BigInt(coef), exp);
+        const actual = BigIntAsDecimal.stringify(coef, exp);
         assert.strictEqual(actual, num.toFixed(-Math.min(0, exp)));
+      }
+    });
+  });
+  describe("BigIntAsDecimal.stringifyLocale()", () => {
+    const locales = [
+      // {{{
+      "en",
+      "ru",
+      "es",
+      "tr",
+      "fa",
+      "fr",
+      "de",
+      "ja",
+      "pt",
+      "vi",
+      "zh",
+      "ar",
+      "it",
+      "pl",
+      "id",
+      "el",
+      "nl",
+      "ko",
+      "th",
+      "cs",
+      "hi",
+      // }}}
+    ];
+
+    const options = [
+      // {{{
+      { style: "currency", currency: "USD" },
+      { style: "currency", currency: "EUR" },
+      { style: "currency", currency: "JPY" },
+      { style: "currency", currency: "GBP" },
+      { style: "currency", currency: "AUD" },
+      // }}}
+    ];
+
+    it("should produce the same results as does Number-based implementation", () => {
+      for (let i = 0; i < 8; i++) {
+        const [coef, exp, num] = createRandomDecimal();
+        const optMinFrac = {
+          minimumFractionDigits: -Math.min(0, exp),
+        };
+        const noParam = BigIntAsDecimal.stringifyLocale(coef, exp);
+        assert.strictEqual(noParam, num.toLocaleString(void 0, optMinFrac));
+
+        for (const l of locales) {
+          for (const o of options) {
+            const opt = { ...o, ...optMinFrac };
+            const wParam = BigIntAsDecimal.stringifyLocale(coef, exp, l, opt);
+            assert.strictEqual(wParam, num.toLocaleString(l, opt));
+          }
+        }
       }
     });
   });
