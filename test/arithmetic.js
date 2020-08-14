@@ -9,7 +9,11 @@ describe("Arithmetic operations", () => {
   };
 
   const numberToDecimal = (num, exp) => {
-    return new BigIntAsDecimal(BigInt(Math.round(num * 10 ** -exp)), exp);
+    const strCoef =
+      exp >= 0
+        ? (num / 10 ** exp).toFixed(0)
+        : num.toFixed(-exp).replace(".", "");
+    return new BigIntAsDecimal(BigInt(strCoef), exp);
   };
 
   describe("BigIntAsDecimal.add()", () => {

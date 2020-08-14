@@ -14,9 +14,7 @@ export class BigIntAsDecimal {
   }
 
   static stringify(coef: bigint, exp: number): string {
-    if (coef === 0n) {
-      return "0";
-    } else if (exp >= 0) {
+    if (exp >= 0) {
       return scaleCoefSafe(coef, exp, 0).toString();
     } else {
       const sign = coef < 0 ? "-" : "";
