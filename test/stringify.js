@@ -95,7 +95,7 @@ describe("BigIntAsDecimal.stringify*", () => {
     ];
 
     it("should produce the same results as does Number-based implementation", () => {
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 16; i++) {
         const [coef, exp, num] = createRandomDecimal();
         const optMinFrac = {
           minimumFractionDigits: -Math.min(0, exp),

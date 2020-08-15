@@ -2,15 +2,14 @@ import { RoundingDivision, RoundingModes } from "./rounding";
 
 /** Represent a decimal number as `coef * 10 ** exp`. */
 export class BigIntAsDecimal {
-  /** Signed coefficient. */
-  coef: bigint;
+  /**
+   * @param coef - Signed coefficient.
+   * @param exp - Exponent.
+   */
+  constructor(public coef: bigint, public exp: number) {}
 
-  /** Exponent. */
-  exp: number;
-
-  constructor(coef: bigint, exp: number) {
-    this.coef = coef;
-    this.exp = exp;
+  clone(): BigIntAsDecimal {
+    return new BigIntAsDecimal(this.coef, this.exp);
   }
 
   static stringify(coef: bigint, exp: number): string {
@@ -61,14 +60,16 @@ export class BigIntAsDecimal {
     // Prepare template by formatting Decimal as Number
     const template = (() => {
       // Condense Decimal into #,###,##0.### to avoid overflow, while tricking plural rules
-      const neg = coef < 0;
-      let conI = (neg ? -integer : integer) % 10_000_000n;
-      if (conI === 0n && integer !== 0n) {
-        conI = 1_000_000n;
+      const neg = coef < 0n;
+      const ui = neg ? -integer : integer;
+      let conI = ui % 10_000_000n;
+      if (conI < 1_000_000n && ui >= 10_000_000n) {
+        conI += 1_000_000n;
       }
-      let conF = (neg ? -fraction : fraction) % 1_000n;
-      if (conF === 0n && fraction !== 0n) {
-        conF = 100n;
+      const uf = neg ? -fraction : fraction;
+      let conF = uf % 1_000n;
+      if (conF < 100n && uf >= 1_000n) {
+        conF += 100n;
       }
       const conE = -Math.max(-3, exp);
       const num = Number.parseFloat(
@@ -133,6 +134,13 @@ export class BigIntAsDecimal {
       : scaleCoefSafe(coef, exp, expTo);
   }
 
+  static compare(xc: bigint, xe: number, yc: bigint, ye: number): number {
+    const exp = Math.min(xe, ye);
+    xc = scaleCoefSafe(xc, xe, exp);
+    yc = scaleCoefSafe(yc, ye, exp);
+    return xc === yc ? 0 : xc > yc ? 1 : -1;
+  }
+
   /** Arithmetic addition. */
   static add(xc: bigint, xe: number, yc: bigint, ye: number): BigIntAsDecimal {
     const exp = Math.min(xe, ye);
@@ -177,7 +185,7 @@ export class BigIntAsDecimal {
       yc = scaleCoefSafe(yc, ye, 0);
       ye = 0;
     }
-    if (expOut + ye - xe > 0) {
+    if (expOut + ye > xe) {
       throw new RangeError(
         "'expOut' should be <= xe - ye, or the result will be rounded twice"
       );
