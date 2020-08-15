@@ -25,80 +25,101 @@ export class BigIntAsDecimal {
     }
   }
 
-  /**
-   * Experimental.
-   *
-   * #### Known issues
-   *
-   * * Fails to format correctly in Arabic when `options.style == "unit"`.
-   */
+  /** Experimental. */
   static stringifyLocale(
     coef: bigint,
     exp: number,
     locales?: string | string[],
     options?: SupportedNumberFormatOptions
   ): string {
-    if (
-      options != null &&
-      options.notation != null &&
-      options.notation !== "standard"
-    ) {
+    // Verify options
+    const opt = {
+      notation: "standard",
+      style: "decimal",
+      ...options,
+      minimumFractionDigits: -Math.min(0, exp),
+    };
+    if (opt.notation !== "standard") {
       throw new RangeError(
-        `options.notation '${options.notation}' is not supported`
+        `options.notation '${opt.notation}' is not supported`
       );
     }
-    if (coef === 0n) {
-      const nf = new Intl.NumberFormat(locales, options);
-      return nf.format(0n);
-    } else if (exp >= 0) {
-      const nf = new Intl.NumberFormat(locales, options);
-      return nf.format(scaleCoefSafe(coef, exp, 0));
-    } else {
-      const div = 10n ** BigInt(-exp);
-
-      // Format integer part
-      const integer = coef / div;
-      const opt: Intl.NumberFormatOptions = {
-        ...options,
-      };
-      if (
-        opt.minimumFractionDigits == null ||
-        opt.minimumFractionDigits < -exp
-      ) {
-        opt.minimumFractionDigits = -exp;
-      }
-      const nf = new Intl.NumberFormat(locales, opt);
-      const parts =
-        coef > 0n || integer !== 0n
-          ? nf.formatToParts(integer)
-          : nf.formatToParts(-0.1); // to format as a negative number
-
-      // Format fraction part
-      const fraction = coef % div;
-      const optf: Intl.NumberFormatOptions = {
-        ...options,
-        minimumIntegerDigits: -exp,
-        useGrouping: false,
-      };
-      const nff = new Intl.NumberFormat(locales, optf);
-      let bufferf = "";
-      for (const e of nff.formatToParts(fraction)) {
-        if (e.type === "integer") {
-          bufferf += e.value;
-        }
-      }
-
-      // Concat parts, replacing fraction part with bufferf
-      let buffer = "";
-      for (const e of parts) {
-        if (e.type === "fraction") {
-          buffer += bufferf;
-        } else {
-          buffer += e.value;
-        }
-      }
-      return buffer;
+    if (opt.style === "percent") {
+      throw new RangeError("options.style 'percent' is not supported");
     }
+
+    // Take care of easy ones: simply format as a BigInt
+    if (coef === 0n || exp >= 0) {
+      const nf = new Intl.NumberFormat(locales, opt);
+      return nf.format(scaleCoefSafe(coef, exp, 0));
+    }
+
+    const div = 10n ** BigInt(-exp);
+    const integer = coef / div;
+    const fraction = coef % div;
+
+    // Prepare template by formatting Decimal as Number
+    const template = (() => {
+      // Condense Decimal into #,###,##0.### to avoid overflow, while tricking plural rules
+      const neg = coef < 0;
+      let conI = (neg ? -integer : integer) % 10_000_000n;
+      if (conI === 0n && integer !== 0n) {
+        conI = 1_000_000n;
+      }
+      let conF = (neg ? -fraction : fraction) % 1_000n;
+      if (conF === 0n && fraction !== 0n) {
+        conF = 100n;
+      }
+      const conE = -Math.max(-3, exp);
+      const num = Number.parseFloat(
+        `${neg ? "-" : ""}${conI}.${String(conF).padStart(conE, "0")}`
+      );
+
+      return new Intl.NumberFormat(locales, {
+        ...opt,
+        minimumFractionDigits: conE,
+        useGrouping: false,
+      }).formatToParts(num);
+    })();
+
+    // Format integer part
+    let bufferi = "";
+    const nfi = new Intl.NumberFormat(locales, {
+      ...opt,
+      style: "decimal",
+    });
+    for (const e of nfi.formatToParts(integer)) {
+      if (e.type === "integer" || e.type === "group") {
+        bufferi += e.value;
+      }
+    }
+
+    // Format fraction part
+    let bufferf = "";
+    const nff = new Intl.NumberFormat(locales, {
+      ...opt,
+      minimumIntegerDigits: -exp,
+      useGrouping: false,
+      style: "decimal",
+    });
+    for (const e of nff.formatToParts(fraction)) {
+      if (e.type === "integer") {
+        bufferf += e.value;
+      }
+    }
+
+    // Plug the integer and fraction parts into the template
+    let buffer = "";
+    for (const e of template) {
+      if (e.type === "integer") {
+        buffer += bufferi;
+      } else if (e.type === "fraction") {
+        buffer += bufferf;
+      } else {
+        buffer += e.value;
+      }
+    }
+    return buffer;
   }
 
   static scaleCoef(
@@ -206,4 +227,5 @@ interface SupportedNumberFormatOptions
     "minimumSignificantDigits" | "maximumSignificantDigits"
   > {
   notation?: "standard";
+  style?: "decimal" | "currency" | "unit";
 }
