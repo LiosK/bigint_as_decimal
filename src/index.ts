@@ -3,13 +3,115 @@ import { RoundingDivision, RoundingModes } from "./rounding";
 /** Represent a decimal number as `coef * 10 ** exp`. */
 export class BigIntAsDecimal {
   /**
+   * Lightweight constructor without any validation. Use
+   * [[BigIntAsDecimal.create]] for normal purposes.
+   *
    * @param coef - Signed coefficient.
-   * @param exp - Exponent.
+   * @param exp - Decimal exponent.
    */
   constructor(public coef: bigint, public exp: number) {}
 
+  /**
+   * Standard constructor to create a [[BigIntAsDecimal]] instance.
+   *
+   * This constructor accepts either a single argument `(x)` or a pair of
+   * arguments `(x, exp)` and returns an instance representing `x` in the former
+   * case by deriving the exponent from the fractional part of `x`, or that
+   * representing `int(x) * 10 ** exp` in the latter case by interpreting the
+   * arguments as a pair of integer coefficient and decimal exponent. Note that
+   * this constructor throws an error if `x` is a non-numeric string; use
+   * [[BigIntAsDecimal.parse]] instead for fallible string parsing.
+   * @param x - Arbitrary numeric value when `exp` is not passed or integer
+   * value when `exp` is passed.
+   * @param exp - Decimal exponent.
+   * @returns A [[BigIntAsDecimal]] representing `x` when `exp` is not passed or
+   * `int(x) * 10 ** exp` when `exp` is passed.
+   */
+  static create(
+    x: BigIntAsDecimal | bigint | number | string,
+    exp?: number
+  ): BigIntAsDecimal {
+    if (exp == null) {
+      // Derive exp from x
+      if (x instanceof BigIntAsDecimal) {
+        return new BigIntAsDecimal(x.coef, x.exp);
+      } else if (typeof x === "bigint") {
+        return new BigIntAsDecimal(x, 0);
+      } else if (typeof x === "number") {
+        if (Number.isInteger(x)) {
+          return new BigIntAsDecimal(BigInt(x), 0);
+        }
+        // Go to the bottom
+      }
+    } else {
+      // Cast x into int and return `x * 10 ** exp`
+      checkExp(exp);
+      if (x instanceof BigIntAsDecimal) {
+        if (!BigIntAsDecimal.isInteger(x.coef, x.exp)) {
+          throw new TypeError("'x' should be an integer when 'exp' is passed");
+        }
+        x = scaleCoefSafe(x.coef, x.exp, 0);
+      } else if (typeof x === "number") {
+        if (!Number.isInteger(x)) {
+          throw new TypeError("'x' should be an integer when 'exp' is passed");
+        }
+        x = BigInt(x);
+      }
+      if (typeof x === "bigint") {
+        return new BigIntAsDecimal(x, exp);
+      }
+    }
+
+    // Trap fractional number and string
+    const parsed = BigIntAsDecimal.parse(String(x), exp);
+    if (parsed != null) {
+      return parsed;
+    } else {
+      throw new SyntaxError(`Cannot convert '${x}' to a BigIntAsDecimal`);
+    }
+  }
+
+  /**
+   * Create BigIntAsDecimal from string.
+   *
+   * @param x - Arbitrary numeric string when `exp` is not passed or integer
+   * string when `exp` is passed.
+   * @returns A [[BigIntAsDecimal]] representing `x` when `exp` is not passed, a
+   * [[BigIntAsDecimal]] representing `int(x) * 10 ** exp` when `exp` is passed,
+   * or `null` if `x` can not be parsed as a number.
+   */
+  static parse(x: string, exp?: number): BigIntAsDecimal | null {
+    if (exp != null) {
+      checkExp(exp);
+    }
+
+    const m = x
+      .trim()
+      .match(/^([+-]?)([0-9]+|[0-9]*\.([0-9]+))(?:e([+-]?[0-9]+))?$/i);
+    if (m == null) {
+      return null;
+    } else {
+      const sign = m[1] === "-" ? "-" : "";
+      const coef = BigInt(`${sign}${m[2].replace(".", "")}`);
+      const lenFrac = m[3] == null ? 0 : m[3].length;
+      const expCoded = (m[4] == null ? 0 : Number.parseInt(m[4])) - lenFrac;
+      if (exp == null) {
+        return new BigIntAsDecimal(coef, expCoded);
+      } else {
+        if (!BigIntAsDecimal.isInteger(coef, expCoded)) {
+          throw new TypeError("'x' should be an integer when 'exp' is passed");
+        }
+        return new BigIntAsDecimal(scaleCoefSafe(coef, expCoded, 0), exp);
+      }
+    }
+  }
+
   clone(): BigIntAsDecimal {
     return new BigIntAsDecimal(this.coef, this.exp);
+  }
+
+  toString(): string {
+    return BigIntAsDecimal.stringify(this.coef, this.exp);
   }
 
   static stringify(coef: bigint, exp: number): string {
@@ -123,6 +225,10 @@ export class BigIntAsDecimal {
     return buffer;
   }
 
+  static isInteger(coef: bigint, exp: number): boolean {
+    return exp >= 0 || coef % 10n ** BigInt(-exp) === 0n;
+  }
+
   static scaleCoef(
     coef: bigint,
     exp: number,
@@ -225,7 +331,18 @@ const scaleCoefSafe = (coef: bigint, exp: number, expTo: number): bigint => {
   } else if (expTo < exp) {
     return coef * 10n ** BigInt(exp - expTo);
   } else {
-    throw new RangeError("'expTo' should be <= 'exp' to avoid rounding");
+    const div = 10n ** BigInt(expTo - exp);
+    if (coef % div === 0n) {
+      return coef / div;
+    } else {
+      throw new RangeError("'expTo' should be smaller to avoid rounding");
+    }
+  }
+};
+
+const checkExp = (exp: number) => {
+  if (!Number.isSafeInteger(exp)) {
+    throw new TypeError("exponent should be an integer");
   }
 };
 
