@@ -114,6 +114,71 @@ export class BigIntAsDecimal {
     return BigIntAsDecimal.stringify(this.coef, this.exp);
   }
 
+  toLocaleString(
+    locales?: string | string[],
+    options?: SupportedNumberFormatOptions
+  ): string {
+    return BigIntAsDecimal.stringifyLocale(
+      this.coef,
+      this.exp,
+      locales,
+      options
+    );
+  }
+
+  isInteger(): boolean {
+    return BigIntAsDecimal.isInteger(this.coef, this.exp);
+  }
+
+  setExp(
+    expTo: number,
+    rounding: RoundingDivision = BigIntAsDecimal.defaultRounding
+  ): BigIntAsDecimal {
+    checkExp(expTo);
+    return new BigIntAsDecimal(
+      BigIntAsDecimal.scaleCoef(this.coef, this.exp, expTo, rounding),
+      expTo
+    );
+  }
+
+  compareTo(yc: bigint, ye: number): number {
+    const y = BigIntAsDecimal.create(yc, ye);
+    return BigIntAsDecimal.compare(this.coef, this.exp, y.coef, y.exp);
+  }
+
+  add(yc: bigint, ye: number): BigIntAsDecimal {
+    const y = BigIntAsDecimal.create(yc, ye);
+    return BigIntAsDecimal.add(this.coef, this.exp, y.coef, y.exp);
+  }
+
+  subtract(yc: bigint, ye: number): BigIntAsDecimal {
+    const y = BigIntAsDecimal.create(yc, ye);
+    return BigIntAsDecimal.subtract(this.coef, this.exp, y.coef, y.exp);
+  }
+
+  multiply(yc: bigint, ye: number): BigIntAsDecimal {
+    const y = BigIntAsDecimal.create(yc, ye);
+    return BigIntAsDecimal.multiply(this.coef, this.exp, y.coef, y.exp);
+  }
+
+  divide(
+    yc: bigint,
+    ye: number,
+    expOut: number = this.exp,
+    rounding: RoundingDivision = BigIntAsDecimal.defaultRounding
+  ): BigIntAsDecimal {
+    const y = BigIntAsDecimal.create(yc, ye);
+    checkExp(expOut);
+    return BigIntAsDecimal.divide(
+      this.coef,
+      this.exp,
+      y.coef,
+      y.exp,
+      expOut,
+      rounding
+    );
+  }
+
   static stringify(coef: bigint, exp: number): string {
     if (exp >= 0) {
       return scaleCoefSafe(coef, exp, 0).toString();
@@ -197,7 +262,7 @@ export class BigIntAsDecimal {
       }
     }
 
-    // Format fraction part
+    // Format fractional part
     let bufferf = "";
     const nff = new Intl.NumberFormat(locales, {
       ...opt,
