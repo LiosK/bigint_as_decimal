@@ -5,7 +5,6 @@ declare namespace Intl {
   }
 
   interface NumberFormat {
-    format(value: bigint): string;
     formatToParts(value: number): NumberFormatPart[];
     formatToParts(value: bigint): NumberFormatPart[];
   }
@@ -13,10 +12,7 @@ declare namespace Intl {
   interface NumberFormatOptions {
     compactDisplay?: string;
     currencySign?: string;
-    notation?: string;
     numberingSystem?: string;
     signDisplay?: string;
-    unit?: string;
-    unitDisplay?: string;
   }
 }
